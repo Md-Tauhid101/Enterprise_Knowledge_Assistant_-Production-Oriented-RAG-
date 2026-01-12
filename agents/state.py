@@ -44,3 +44,5 @@ class QueryState(TypedDict):
     # Refusal / Final output
     final_response: Optional[str]             
     refused: Optional[bool] 
+    
+    refusal_reason: Optional[str]

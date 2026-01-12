@@ -24,7 +24,7 @@ def build_query_graph(vector_store, bm25_store, chunk_retriever):
 
     validate = partial(
         validate_node,
-        chunk_retriever= chunk_retriever
+        chunk_retriever=chunk_retriever
     )
 
     # Nodes
@@ -35,45 +35,34 @@ def build_query_graph(vector_store, bm25_store, chunk_retriever):
     graph.add_node("retrieve", retrieve)
     graph.add_node("validate", validate)
     graph.add_node("answer", answer_generation_node)
-    # graph.add_node("refuse", refusal_node)
+    graph.add_node("refuse", refusal_node)
 
-    # Edges (linear part)
+    # Entry
     graph.set_entry_point("intent_check")
+
+    # Linear flow
     graph.add_edge("intent_check", "rewrite_generate")
     graph.add_edge("rewrite_generate", "rewrite_guard")
     graph.add_edge("rewrite_guard", "query_embedding")
     graph.add_edge("query_embedding", "retrieve")
     graph.add_edge("retrieve", "validate")
 
+    # Validation decision
     graph.add_conditional_edges(
         "validate",
-        lambda state: "answer" if state.get("validation_status") == "pass" else END,
+        lambda state: "answer" if state.get("validation_status") == "pass" else "refuse",
         {
             "answer": "answer",
-            END: END
+            "refuse": "refuse"
         }
     )
 
-
-    # # Conditional branching
-    # def validation_router(state: QueryState):
-    #     if state.get("validation_status") == "pass":
-    #         return "answer"
-    #     return "refuse"
-
-    # graph.add_conditional_edges(
-    #     "validate",
-    #     validation_router,
-    #     {
-    #         "answer": "answer",
-    #         "refuse": "refuse",
-    #     }
-    # )
-
-    graph.add_edge("answer", END)
-    # graph.add_edge("refuse", END)
+    # Final gate
+    graph.add_edge("answer", "refuse")
+    graph.add_edge("refuse", END)
 
     return graph.compile()
+
 
 if __name__ == "__main__":
     

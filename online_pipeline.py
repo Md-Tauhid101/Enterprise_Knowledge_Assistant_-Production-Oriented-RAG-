@@ -14,7 +14,11 @@ bm25_store.load("sparse_store/bm25_index.pkl")
 chunk_retriever = ChunkRetriever(db_config=DB_CONFIG)
 
 def run_query(user_query: str):
-    workflow = build_query_graph(vector_store=vector_store, bm25_store=bm25_store, chunk_retriever=chunk_retriever)
+    workflow = build_query_graph(
+        vector_store=vector_store,
+        bm25_store=bm25_store,
+        chunk_retriever=chunk_retriever
+    )
 
     initial_state: QueryState = {
         "user_query": user_query,
@@ -28,56 +32,42 @@ def run_query(user_query: str):
         # rewrite
         "rewrite_candidates": None,
         "rewrite_risk": None,
-        # "final_query": user_query,
+        "original_query": user_query,
+        "selected_queries": None,
+        "rewrite_allowed": None,
         "final_query": None,
 
         # retrieval
         "retrieved_chunks": [],
-        "final_chunks": [],
+        "retrieval_debug": None,
 
         # validation
+        "final_chunks": [],
         "validation_status": None,
         "validation_reason": None,
 
         # answer
         "answer_text": None,
         "answer_citations": [],
-        "answer_supported": False,
-        ####
-        "reason": None,
+
+        # final output
+        "final_response": None,
+        "refused": None,
+        "refusal_reason": None,
     }
-
-    # final_state = workflow.invoke(initial_state)
-
-    # return {
-    #     "answer": final_state.get("answer_text"),
-    #     "citations": final_state.get("answer_citations"),
-    #     # "refused": not final_state.get("answer_supported"),
-    #     "refused": final_state.get("validation_status") != "pass",
-    #     "reason": final_state.get("validation_reason"),
-    # }
 
     final_state = workflow.invoke(initial_state)
 
-    refused = (
-        final_state.get("validation_status") != "pass"
-        or not final_state.get("answer_supported")
-    )
-
-    reason = (
-        final_state.get("validation_reason")
-        or final_state.get("reason")
-    )
-
     return {
-        "answer": final_state.get("answer_text"),
+        "answer": final_state.get("final_response"),
         "citations": final_state.get("answer_citations"),
-        "refused": refused,
-        "reason": reason,
+        "refused": final_state.get("refused"),
+        "reason": final_state.get("refusal_reason") or final_state.get("validation_reason"),
     }
 
+
 if __name__ == "__main__":
-    query = "Which technologies were used in the AI Agent with Web Search project?"
+    query = "what is huggingface?"
     response = run_query(query)
 
     print("\n--- RESPONSE ---")

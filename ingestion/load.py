@@ -11,6 +11,15 @@ os.makedirs(IMAGE_DIR, exist_ok=True)
 
 
 def compute_checksum(file_path: str) -> str:
+    """
+    Compute checksum to ensure document uniqueness.
+    
+    Args:
+        file_path: List of input document path.
+        
+    Returns:
+        A unique hash function of 256 bit.
+    """
     hasher = hashlib.sha256()
     with open(file_path, "rb") as f:
         for chunk in iter(lambda: f.read(8192), b""):
@@ -23,6 +32,12 @@ def load_documents(file_paths: List[str]) -> List[Document]:
     """
     Load files into normalized Document objects WITHOUT embedding or chunking.
     This step produces raw structural elements, not final chunks.
+    
+    Args:
+        file_path: List of document paths.
+    
+    Return:
+        A list of normalized documents.
     """
     docs: List[Document] = []
 
